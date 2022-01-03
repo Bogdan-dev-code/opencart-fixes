@@ -1,0 +1,12 @@
+In order to use these opencart modification you need to replace OC version in all index.php files
+
+After:
+<?php
+
+Find: 
+define('VERSION', '3.0.3.7');
+
+Replace with: 
+define('VERSION', '3.0.3.7.1');
+
+Here will be addes some shits about this project. 
