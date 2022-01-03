@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+-<modification>
+
+<name>OC Session fix</name>
+
+<code>6629190803</code>
+
+<version>3.x</version>
+
+<author>Bogdan Fratilescu</author>
+
+<link>https://www.anna-delivery.ro</link>
+
+
+-<file path="system/library/session.php">
+
+
+-<operation>
+
+
+-<search>
+
+-<![CDATA[
+	public function close() {
+				]]>
+</search>
+
+
+-<add offset="2" position="replace">
+
+-<![CDATA[
+	public function close() {
+		$this->adaptor->close($this->session_id, $this->data);
+	}
+				]]>
+</add>
+
+</operation>
+
+</file>
+
+
+-<file path="system/library/session/db.php">
+
+
+-<operation>
+
+
+-<search>
+
+-<![CDATA[
+		$query = $this->db->query("SELECT `data` FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "' AND expire > " . (int)time());
+				]]>
+</search>
+
+
+-<add position="replace">
+
+-<![CDATA[
+		$query = $this->db->query("SELECT `data` FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "' AND expire > DATE_SUB(NOW(), INTERVAL " . $this->expire . " SECOND);");
+				]]>
+</add>
+
+</operation>
+
+
+-<operation>
+
+
+-<search>
+
+-<![CDATA[
+		public function gc($expire) {
+				]]>
+</search>
+
+
+-<add position="before">
+
+-<![CDATA[
+		public function close( $session_id, $data ) {
+			$this->write($session_id, $data);
+			$this->gc($this->expire);
+		}
+				]]>
+</add>
+
+</operation>
+
+
+-<operation>
+
+
+-<search>
+
+-<![CDATA[
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE expire < " . ((int)time() + $expire));
+				]]>
+</search>
+
+
+-<add position="replace">
+
+-<![CDATA[
+		$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE expire < DATE_SUB(NOW(), INTERVAL " . ((int)$expire) . " SECOND);");
+				]]>
+</add>
+
+</operation>
+
+</file>
+
+<!-- InnoDB -->
+
+
+<!-- CREATE TABLE `oc_session` (`session_id` varchar(32) NOT NULL,`data` text NOT NULL,`ip_address` varchar(255) DEFAULT NULL,`user_agent` tinytext,`expire` datetime NOT NULL,PRIMARY KEY (`session_id`) ) ENGINE=InnoDB DEFAULT CHARSET=utf8 -->
+
+
+<!--<file path="system/library/session/db.php"><operation><search position="before"><![CDATA[public function gc($expire) {]]></search><add><![CDATA[public function close( $session_id, $data ) {$this->write($session_id, $data);$this->gc($this->expire);}]]></add></operation><operation><search position="replace"><![CDATA[$query = $this->db->query("SELECT `data` FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "' AND expire > DATE_SUB(NOW(), INTERVAL " . $this->expire . " SECOND);");]]></search><add><![CDATA[$this->db->query("START TRANSACTION READ ONLY");$query = $this->db->query("SELECT `data` FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "' AND expire > " . (int)time());$this->db->query("COMMIT");]]></add></operation><operation><search position="replace"><![CDATA[$this->db->query("REPLACE INTO `" . DB_PREFIX . "session` SET session_id = '" . $this->db->escape($session_id) . "', `data` = '" . $this->db->escape(json_encode($data)) . "', expire = '" . $this->db->escape(date('Y-m-d H:i:s', time() + $this->expire)) . "'");]]></search><add><![CDATA[$this->db->query("START TRANSACTION");$this->db->query("REPLACE INTO `" . DB_PREFIX . "session` SET session_id = '" . $this->db->escape($session_id) . "', `data` = '" . $this->db->escape(json_encode($data)) . "', user_agent = '" . $this->db->escape($_SERVER['HTTP_USER_AGENT']) . "', ip_address = '". $this->db->escape($_SERVER['REMOTE_ADDR']) . "', expire = '" . $this->db->escape(date('Y-m-d H:i:s', time() + $this->expire)) . "'");$this->db->query("COMMIT");]]></add></operation><operation><search position="replace"><![CDATA[$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "'");]]></search><add><![CDATA[$this->db->query("START TRANSACTION");$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE session_id = '" . $this->db->escape($session_id) . "'");$this->db->query("COMMIT");]]></add></operation><operation><search position="replace"><![CDATA[$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE expire < " . ((int)time() + $expire));]]></search><add><![CDATA[$this->db->query("START TRANSACTION");$this->db->query("DELETE FROM `" . DB_PREFIX . "session` WHERE expire < DATE_SUB(NOW(), INTERVAL " . $expire . " SECOND);"); // + 86400$this->db->query("COMMIT");]]></add></operation></file> -->
+
+
+</modification>
