@@ -1,0 +1,158 @@
+<?xml version="1.0"?>
+
+-<modification>
+
+<id>No Coupon applied if product have special price</id>
+
+<version>1.0</version>
+
+<vqmver>2.0.8</vqmver>
+
+<author>Bogdan Fratilescu</author>
+
+
+-<file name="catalog/contoller/total/coupon.php">
+
+
+-<operation>
+
+
+-<search position="after">
+
+-<![CDATA[
+           $this->load->model('total/coupon');
+            ]]>
+</search>
+
+
+-<add>
+
+-<![CDATA[
+			$this->load->model('catalog/product');
+			]]>
+</add>
+
+</operation>
+
+</file>
+
+
+-<file name="catalog/model/total/coupon.php">
+
+
+-<operation>
+
+
+-<search position="before">
+
+-<![CDATA[
+            if ($status) {
+            ]]>
+</search>
+
+
+-<add>
+
+-<![CDATA[
+			// Q: Don't discount if product is on special
+				$results = $this->model_catalog_product->getProduct($product['product_id']);
+				if ($results['special']) {
+					continue;
+				}			
+			]]>
+</add>
+
+</operation>
+
+<!--bof-lll-fix-1-->
+
+
+
+-<operation>
+
+
+-<search position="replace">
+
+-<![CDATA[
+            $sub_total = $this->cart->getSubTotal();
+            ]]>
+</search>
+
+
+-<add>
+
+-<![CDATA[
+			if (!$coupon_info['product']) {
+				//bof-lll exlude special products from subtotal
+				$sub_total = 0;
+				foreach ($this->cart->getProducts() as $product) {
+					$results = $this->model_catalog_product->getProduct($product['product_id']);
+					if (!$results['special']) {
+						$sub_total += $product['total'];
+					}
+				}
+				//eof
+				//$sub_total = $this->cart->getSubTotal(); //default 
+			} else {
+				$sub_total = 0;
+				foreach ($this->cart->getProducts() as $product) {
+					if (in_array($product['product_id'], $coupon_info['product'])) {
+						$sub_total += $product['total'];
+					}
+				}
+			}
+			]]>
+</add>
+
+</operation>
+
+<!--eof-lll-fix-1-->
+
+
+</file>
+
+<!--bof-lll-fix-2-->
+
+
+
+-<file name="catalog/model/total/coupon.php">
+
+
+-<operation>
+
+
+-<search position="before">
+
+-<![CDATA[
+            if ($coupon_query->row['logged'] && !$this->customer->getId()) {
+            ]]>
+</search>
+
+
+-<add>
+
+-<![CDATA[
+			//bof- exclude special products from subtotal
+			$this->load->model('catalog/product');
+			$sub_total = 0;
+			foreach ($this->cart->getProducts() as $product) {
+				$results = $this->model_catalog_product->getProduct($product['product_id']);
+				if (!$results['special']) {
+					$sub_total += $product['total'];
+				}
+			}
+			if ($coupon_query->row['total'] >= $sub_total) {
+				$status = false;
+			}
+			//eof
+			]]>
+</add>
+
+</operation>
+
+</file>
+
+<!--eof-lll-fix-2-->
+
+
+</modification>
