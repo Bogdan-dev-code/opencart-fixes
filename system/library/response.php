@@ -107,7 +107,30 @@ class Response {
  	*/
 	public function output() {
 		if ($this->output) {
-            
+            //Q: Add width/height tags to all images for Google Page Speed tip:
+            //http://code.google.com/speed/page-speed/docs/rendering.html#SpecifyImageDimensions
+            preg_match_all('/<img[^>]+>/i', $this->output, $result);
+
+            $img = array();
+            foreach($result[0] as $img_tag) {
+            preg_match_all('/(width|height|src)=("[^"]*")/i',$img_tag, $img[$img_tag]);
+            }
+
+            foreach ($img as $k => $info) {
+            if (count($info) == 3 && $info[1][0] == 'src') {
+            //if (curl_init(str_replace('"', '', $info[2][0]))) {
+            $imgfile = str_replace('"', '', $info[2][0]);
+            $imgfile = str_replace(HTTP_SERVER, DIR_IMAGE . '../', $imgfile);
+            $imgfile = str_replace(HTTPS_SERVER, DIR_IMAGE . '../', $imgfile);
+            if (file_exists($imgfile)) {
+            $image_info = getImageSize(str_replace('"', '', $imgfile));
+            $k = trim($k, '/>');
+            $k = trim($k, '>');
+            $this->output = str_replace($k, ($k . ' ' . $image_info[3]), $this->output);
+            }
+            }
+            }
+//
 			$output = $this->level ? $this->compress($this->output, $this->level) : $this->output;
 			
 			if (!headers_sent()) {
